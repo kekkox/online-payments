@@ -1,0 +1,30 @@
+{
+  "name": "online-payments",
+  "version": "1.0.0",
+  "description": "REST API to manage online payments made with Typescript",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node /dist/index.js",
+    "start:dev": "nodemon -L src/index.ts",
+    "docker-up": "docker-compose up -d --build be",
+    "docker-down": "docker-compose down -v",
+    "docker-up:dev": "docker-compose -f docker-compose.dev.yml up --build be",
+    "docker-down:dev": "docker-compose down -v"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.3",
+    "mongoose": "^6.2.8"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/node": "^17.0.23",
+    "nodemon": "^2.0.15",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.2"
+  }
+}
