@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 
 import { IAuthRequest, IErrorResponse, IResponse } from "../types";
 import { User } from "../model";
-import { LoginDto, SignupDto, validateLogin, validateSignup } from "../types/auth/dto";
+import { LoginDto, SignupDto, validateLogin, validateSignup } from "../types/dto/auth";
 import { authorize } from "../middleware/auth";
 
 // Utility constants
