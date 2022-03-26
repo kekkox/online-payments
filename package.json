@@ -10,12 +10,13 @@
     "docker-up": "docker-compose up -d --build be",
     "docker-down": "docker-compose down -v",
     "docker-up:dev": "docker-compose -f docker-compose.dev.yml up --build be",
-    "docker-down:dev": "docker-compose down -v"
+    "docker-down:dev": "docker-compose -f docker-compose.dev.yml down -v"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "argon2": "^0.28.5",
     "cors": "^2.8.5",
     "express": "^4.17.3",
     "jsonwebtoken": "^8.5.1",

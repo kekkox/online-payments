@@ -23,5 +23,6 @@ services:
       - mongo
     volumes:
       - .:/app/online-payments
+      - /app/online-payments/node_modules
 volumes:
   mongo-db:
