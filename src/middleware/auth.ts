@@ -4,16 +4,16 @@ import User from "../model/User";
 import { IAuthPayload, UserRole, validatePayload } from "../types/auth";
 
 import type { Response } from "express";
-import type { IRequest, IResponse, ValidationResult } from "../types";
+import type { IAuthRequest, IResponse, ValidationResult } from "../types";
 
 /**
  * Middleware that allow the access to a route only if the user is authenticated.
  * If one or more role are specified, the user will be authorized only if it has the specified role
  */
 export const authorize = (...roles: UserRole[]) => {
-  return async (req: IRequest, res: Response<IResponse<any>>, next: Function) => {
+  return async (req: IAuthRequest, res: Response<IResponse<any>>, next: Function) => {
     // Try to get the token from the header
-    const token = req.header("authorization");
+    const token = req.header("authorization") || req.cookies.authToken;
     if (!token)
       return res.status(401).send({ ok: false, message: "Access denied. No token provided." });
 

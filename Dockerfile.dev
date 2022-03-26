@@ -4,5 +4,6 @@ COPY package.json ./
 RUN npm install
 COPY . .
 ENV PORT 3000
+ENV TS_NODE_FILES=true
 EXPOSE $PORT
 CMD [ "npm", "run", "start:dev"]

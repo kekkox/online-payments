@@ -1,8 +1,9 @@
 import { Router, Response } from "express";
 
-import { IErrorResponse, IResponse } from "../types";
+import { IAuthRequest, IErrorResponse, IResponse } from "../types";
 import { User } from "../model";
 import { LoginDto, SignupDto, validateLogin, validateSignup } from "../types/auth/dto";
+import { authorize } from "../middleware/auth";
 
 // Utility constants
 const LOGIN_FAILED_ERROR: IErrorResponse = { ok: false, message: "Wrong email or password" };
@@ -35,6 +36,8 @@ router.post("/", async (req, res: Response<IResponse<{ token: string }>>) => {
 
   // Generate the token
   const token = user.generateAuthToken();
+  // Set the token to the cookie
+  res.cookie("authToken", token, { httpOnly: true });
 
   // Send the response
   return res.send({
@@ -66,6 +69,8 @@ router.post("/signup", async (req, res: Response<IResponse<{ token: string }>>) 
 
   // Generate the token
   const token = user.generateAuthToken();
+  // Set the token to the cookie
+  res.cookie("authToken", token, { httpOnly: true });
 
   // Send the response
   return res.send({
@@ -73,5 +78,17 @@ router.post("/signup", async (req, res: Response<IResponse<{ token: string }>>) 
     data: { token },
   });
 });
+
+// Endpoint that handles logout requests
+router.post(
+  "/logout",
+  authorize(),
+  async (req: IAuthRequest, res: Response<IResponse<undefined>>) => {
+    // Delete all the cookies
+    res.clearCookie("authToken");
+
+    res.status(200).send({ ok: true, data: undefined, message: "Logged out" });
+  }
+);
 
 export default router;
