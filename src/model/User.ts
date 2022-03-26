@@ -1,16 +1,9 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 import jwt, { SignOptions } from "jsonwebtoken";
 import argon from "argon2";
 
-import type { User } from "../types/model";
+import type { User, IUserDocument } from "../types/model";
 import { IAuthPayload } from "../types/auth";
-
-interface IUserDocument extends User, Document {
-  /** Function that check if the given password match with the one of the user */
-  comparePassword: (this: User, toCompare: string) => Promise<boolean>;
-  /** Generate an authentication token for the current user */
-  generateAuthToken: (this: User) => string;
-}
 
 const userSchema = new Schema<IUserDocument>({
   email: {
@@ -21,6 +14,10 @@ const userSchema = new Schema<IUserDocument>({
   password: {
     type: String,
     required: true,
+  },
+  company: {
+    type: Types.ObjectId,
+    ref: "Company",
   },
   role: {
     type: String,
