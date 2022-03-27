@@ -1,10 +1,15 @@
 # Online-payments
 
+![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
+
 REST API to manage online payments made with Typescript, express and mongoose.
 
-## How to run the project
+## How to run the project 🚀
 
-### On docker
+### On docker 🐳
 
 First of all, you need to create an .env file that contains all the required env variables (See .env.sample file for more details).
 
@@ -31,7 +36,7 @@ npm run docker-up
 
 Your server is ready!
 
-### Local environment
+### Local environment 💻
 
 First of all, you need to set on your shell all the needed env variables (See .env.sample file for more details)
 
@@ -63,7 +68,7 @@ Then you can run the command
 npm run start
 ```
 
-## Initialize the database
+## Initialize the database 🗃️
 
 If you want to, the database will be initialized with some sample data.
 
@@ -73,4 +78,4 @@ To do that, you need to run the command:
 npm run db-init
 ```
 
-> Be careful, this command will erase all the data in the database and replace it with the sample data.
+> ⚠️ Be careful, this command will erase all the data in the database and replace it with the sample data. ⚠️
