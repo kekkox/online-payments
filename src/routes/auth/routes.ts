@@ -46,39 +46,6 @@ router.post("/", async (req, res: Response<IResponse<{ token: string }>>) => {
   });
 });
 
-// Endpoint that handles signup requests for company users
-router.post("/signup", async (req, res: Response<IResponse<{ token: string }>>) => {
-  // Validate the body
-  const validation = validateSignup(req.body);
-  if (!validation.success) {
-    return res.status(400).send({ ok: false, message: validation.error.message });
-  }
-
-  // Destructure the body
-  const { email, password } = req.body as SignupDto;
-
-  // Check if an user with the same email already exists
-  const duplicatedUser = await User.findOne({ email });
-  if (duplicatedUser) {
-    return res.status(400).send({ ok: false, message: "Email already in use" });
-  }
-
-  // Create the user
-  const user = new User({ email, password, role: "admin" });
-  await user.save();
-
-  // Generate the token
-  const token = user.generateAuthToken();
-  // Set the token to the cookie
-  res.cookie("authToken", token, { httpOnly: true });
-
-  // Send the response
-  return res.send({
-    ok: true,
-    data: { token },
-  });
-});
-
 // Endpoint that handles logout requests
 router.post(
   "/logout",
