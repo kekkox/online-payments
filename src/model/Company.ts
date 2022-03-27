@@ -165,6 +165,22 @@ companySchema.statics.getCompanyReport = async function (
     prettifyResult,
   ]);
 
+  // Check if we got a result
+  if (!result) {
+    // Get the name of the company since is required on the result
+    const company = await this.findById(companyId).select("name");
+
+    // Return a default result
+    return {
+      _id: companyId.toString(),
+      name: company?.name || "",
+      companyBalance: 0,
+      companyIncomes: 0,
+      companyExpenses: 0,
+      accountReports: [],
+    };
+  }
+
   return result;
 };
 
