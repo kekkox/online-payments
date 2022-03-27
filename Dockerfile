@@ -11,7 +11,7 @@ RUN npm run build
 FROM node:lts-alpine
 WORKDIR /app/online-payments
 COPY --from=ts-compiler /app/online-payments/package*.json ./
-COPY --from=ts-compiler /app/online-payments/dist/src ./
+COPY --from=ts-compiler /app/online-payments/dist ./
 RUN npm install --only=production
 ENV PORT 3000
 EXPOSE $PORT
