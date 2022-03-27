@@ -2,7 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
-import { authRoute, collaboratorsRoute, companiesRoute } from "./routes";
+import { authRoute, checkingAccountsRoute, collaboratorsRoute, companiesRoute } from "./routes";
 
 import type { Express } from "express";
 
@@ -18,5 +18,6 @@ app.use(cors());
 app.use("/api/auth", authRoute);
 app.use("/api/companies", companiesRoute);
 app.use("/api/collaborators", collaboratorsRoute);
+app.use("/api/checking-accounts", checkingAccountsRoute);
 
 export default app;
