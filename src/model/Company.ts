@@ -1,8 +1,10 @@
 import { Schema, model, Types, PipelineStage } from "mongoose";
 import {
   ICompanyAccountReport,
+  ICompanyAccountReportByDateRangeOptions,
   ICompanyAccountReportOptions,
   ICompanyMonthlyReport,
+  ICompanyReport,
 } from "../types/checkingAccount";
 
 import { CheckingAccount, Company, DailyMovement, ICompanyModel } from "../types/model";
@@ -300,6 +302,109 @@ companySchema.statics.getMonthlyReport = async function (
     calculateCompanyReport,
     prettifyResult,
   ]);
+
+  return result;
+};
+
+companySchema.statics.getReportBetweenDates = async function (
+  this: ICompanyModel,
+  companyId: Types.ObjectId,
+  options: ICompanyAccountReportByDateRangeOptions
+): Promise<ICompanyReport> {
+  // Destructure options
+  const { startDate, endDate, onlyPublic } = options;
+
+  // Aggregation steps
+  const filterByCompany: PipelineStage = { $match: { _id: companyId } };
+  const unwindCheckingAccounts: PipelineStage = {
+    $unwind: { path: "$checkingAccounts", preserveNullAndEmptyArrays: true },
+  };
+  const filterOnlyPublicAccounts: PipelineStage = {
+    $match: { "checkingAccounts.public": true },
+  };
+  const unwindMovements: PipelineStage = {
+    $unwind: { path: "$checkingAccounts.movements", preserveNullAndEmptyArrays: true },
+  };
+  const filterByDate: PipelineStage = {
+    $match: {
+      $and: [
+        { "checkingAccounts.movements.date": { $gte: startDate } },
+        { "checkingAccounts.movements.date": { $lte: endDate } },
+      ],
+    },
+  };
+  const groupByCheckingAccount: PipelineStage = {
+    $group: {
+      _id: {
+        accountId: "$checkingAccounts._id",
+        accountName: "$checkingAccounts.name",
+        companyId: "$_id",
+        companyName: "$name",
+      },
+      incomes: { $sum: "$checkingAccounts.movements.incomes" },
+      expenses: { $sum: "$checkingAccounts.movements.expenses" },
+      movements: { $push: "$checkingAccounts.movements" },
+    },
+  };
+  const getFirstMovement: PipelineStage = {
+    $addFields: {
+      firstMovement: { $first: "$movements" },
+    },
+  };
+  const calculateBalance: PipelineStage = {
+    $project: {
+      incomes: "$incomes",
+      expenses: "$expenses",
+      balance: { $add: ["$firstMovement.balance", "$incomes", { $multiply: ["$expenses", -1] }] },
+    },
+  };
+  const groupByCompany: PipelineStage = {
+    $group: {
+      _id: { companyId: "$_id.companyId", companyName: "$_id.companyName" },
+      incomes: { $sum: "$incomes" },
+      expenses: { $sum: "$expenses" },
+      balance: { $sum: "$balance" },
+    },
+  };
+  const prettifyResult: PipelineStage = {
+    $project: {
+      _id: "$_id.companyId",
+      name: "$_id.companyName",
+      incomes: "$incomes",
+      expenses: "$expenses",
+      balance: "$balance",
+    },
+  };
+
+  const [result] = await this.aggregate<ICompanyReport>([
+    filterByCompany,
+    unwindCheckingAccounts,
+    // If we want to retrieve only the public accounts
+    // we remove the private ones
+    ...(onlyPublic ? [filterOnlyPublicAccounts] : []),
+    unwindMovements,
+    filterByDate,
+    groupByCheckingAccount,
+    getFirstMovement,
+    calculateBalance,
+    groupByCompany,
+    prettifyResult,
+  ]);
+
+  // Check if we got a result
+  if (!result) {
+    // Get the name of the company since is required on the result
+    const company = await this.findById(companyId).select("name");
+
+    // Return a default result
+    return {
+      _id: companyId.toString(),
+      name: company?.name || "",
+      balance: 0,
+      incomes: 0,
+      expenses: 0,
+    };
+  }
 
   return result;
 };

@@ -1,10 +1,13 @@
-interface ICheckingAccountReport {
+export interface ICompanyReport {
   _id: string;
   name: string;
-  firstAccess: Date;
   balance: number;
   incomes: number;
   expenses: number;
+}
+
+interface ICheckingAccountReport extends ICompanyReport {
+  firstAccess: Date;
 }
 
 export interface ICompanyAccountReport {
@@ -16,13 +19,8 @@ export interface ICompanyAccountReport {
   accountReports: ICheckingAccountReport[];
 }
 
-export interface IMonthReport {
-  _id: string;
-  name: string;
+export interface IMonthReport extends ICompanyReport {
   date: string;
-  incomes: number;
-  expenses: number;
-  balance: number;
 }
 
 export type ICompanyMonthlyReport = IMonthReport & { accountReports: IMonthReport[] };
@@ -30,3 +28,11 @@ export type ICompanyMonthlyReport = IMonthReport & { accountReports: IMonthRepor
 export interface ICompanyAccountReportOptions {
   onlyPublic?: boolean;
 }
+
+interface CompanyAccountReportByDateRangeOptions {
+  startDate: Date;
+  endDate: Date;
+}
+
+export type ICompanyAccountReportByDateRangeOptions = ICompanyAccountReportOptions &
+  CompanyAccountReportByDateRangeOptions;

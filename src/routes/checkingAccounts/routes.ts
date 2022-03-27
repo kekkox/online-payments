@@ -4,7 +4,11 @@ import { Types } from "mongoose";
 import { authorize } from "../../middleware/auth";
 import { Company } from "../../model";
 import { IAuthRequest, IResponse } from "../../types";
-import { ICompanyAccountReport, ICompanyMonthlyReport } from "../../types/checkingAccount";
+import {
+  ICompanyAccountReport,
+  ICompanyMonthlyReport,
+  ICompanyReport,
+} from "../../types/checkingAccount";
 import {
   CreateCheckingAccountDto,
   validateCreateCheckingAccount,
@@ -62,6 +66,76 @@ router.get(
 
     // Get the report
     const report = await Company.getMonthlyReport(companyIdParsed, { onlyPublic: !isAdmin });
+
+    // Return the report
+    return res.json({ ok: true, data: report });
+  }
+);
+
+router.get(
+  "/companies/:companyId/report/by-date-range",
+  authorize(),
+  async (req: IAuthRequest, res: Response<IResponse<ICompanyReport>>) => {
+    // Get the company id
+    const { companyId } = req.params;
+
+    // Get the date range
+    const { startDate, endDate } = req.query;
+    // Check if the date range is valid
+    if (!startDate) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "The 'startDate' query param is required" });
+    }
+    if (!endDate) {
+      return res.status(400).json({ ok: false, message: "The 'endDate' query param is required" });
+    }
+
+    // Parse the startDate and endDate to date objects
+    const startDateParsed = new Date(String(startDate));
+    const endDateParsed = new Date(String(endDate));
+    // Check if the date range is valid
+    if (isNaN(startDateParsed.getTime())) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "The 'startDate' query param is not a valid date" });
+    }
+    if (isNaN(endDateParsed.getTime())) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "The 'endDate' query param is not a valid date" });
+    }
+
+    // Set the time to midnight
+    startDateParsed.setHours(0, 0, 0, 0);
+    endDateParsed.setHours(0, 0, 0, 0);
+
+    // Check if the startDate is before the endDate
+    if (startDateParsed.getTime() > endDateParsed.getTime()) {
+      return res.status(400).json({
+        ok: false,
+        message:
+          "The 'startDate' query param must be a date that is temporally before the 'endDate' query param",
+      });
+    }
+
+    // Validate the company id
+    const validation = await validateCompany(companyId);
+    if (validation.error) {
+      return res.status(400).json({ ok: false, message: validation.message });
+    }
+
+    // Parse the company id to a mongoose object id
+    const companyIdParsed = new Types.ObjectId(companyId);
+    // Check if the logged user is an admin
+    const isAdmin = req.user.role === "admin";
+
+    // Get the report
+    const report = await Company.getReportBetweenDates(companyIdParsed, {
+      startDate: startDateParsed,
+      endDate: endDateParsed,
+      onlyPublic: !isAdmin,
+    });
 
     // Return the report
     return res.json({ ok: true, data: report });
