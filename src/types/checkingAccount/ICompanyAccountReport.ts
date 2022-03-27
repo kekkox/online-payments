@@ -16,6 +16,17 @@ export interface ICompanyAccountReport {
   accountReports: ICheckingAccountReport[];
 }
 
+export interface IMonthReport {
+  _id: string;
+  name: string;
+  date: string;
+  incomes: number;
+  expenses: number;
+  balance: number;
+}
+
+export type ICompanyMonthlyReport = IMonthReport & { accountReports: IMonthReport[] };
+
 export interface ICompanyAccountReportOptions {
   onlyPublic?: boolean;
 }

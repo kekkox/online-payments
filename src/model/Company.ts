@@ -1,5 +1,9 @@
 import { Schema, model, Types, PipelineStage } from "mongoose";
-import { ICompanyAccountReport, ICompanyAccountReportOptions } from "../types/checkingAccount";
+import {
+  ICompanyAccountReport,
+  ICompanyAccountReportOptions,
+  ICompanyMonthlyReport,
+} from "../types/checkingAccount";
 
 import { CheckingAccount, Company, DailyMovement, ICompanyModel } from "../types/model";
 
@@ -180,6 +184,122 @@ companySchema.statics.getCompanyReport = async function (
       accountReports: [],
     };
   }
+
+  return result;
+};
+
+companySchema.statics.getMonthlyReport = async function (
+  this: ICompanyModel,
+  companyId: Types.ObjectId,
+  options: ICompanyAccountReportOptions
+): Promise<ICompanyMonthlyReport[]> {
+  // Destructure options
+  const { onlyPublic } = options;
+
+  // Aggregation steps
+  const filterByCompany: PipelineStage = { $match: { _id: companyId } };
+  const unwindCheckingAccounts: PipelineStage = {
+    $unwind: { path: "$checkingAccounts", preserveNullAndEmptyArrays: true },
+  };
+  const filterOnlyPublicAccounts: PipelineStage = {
+    $match: { "checkingAccounts.public": true },
+  };
+  const unwindMovements: PipelineStage = {
+    $unwind: { path: "$checkingAccounts.movements", preserveNullAndEmptyArrays: true },
+  };
+  const addMonthField: PipelineStage = {
+    $addFields: {
+      "checkingAccounts.movements.month": {
+        $dateToString: {
+          date: "$checkingAccounts.movements.date",
+          format: "%m/%Y",
+        },
+      },
+    },
+  };
+  const groupByMonth: PipelineStage = {
+    $group: {
+      _id: {
+        date: "$checkingAccounts.movements.month",
+        accountId: "$checkingAccounts._id",
+        accountName: "$checkingAccounts.name",
+        companyId: "$_id",
+        companyName: "$name",
+      },
+      incomes: { $sum: "$checkingAccounts.movements.incomes" },
+      expenses: { $sum: "$checkingAccounts.movements.expenses" },
+      movements: { $push: "$checkingAccounts.movements" },
+    },
+  };
+  const getFirstMovement: PipelineStage = {
+    $addFields: {
+      firstMovement: { $first: "$movements" },
+    },
+  };
+  const calculateBalance: PipelineStage = {
+    $project: {
+      date: "$_id.date",
+      accountReport: {
+        _id: "$_id.accountId",
+        name: "$_id.accountName",
+        incomes: "$incomes",
+        expenses: "$expenses",
+        balance: { $add: ["$firstMovement.balance", "$incomes", { $multiply: ["$expenses", -1] }] },
+      },
+    },
+  };
+  const groupByAccount: PipelineStage = {
+    $group: {
+      _id: { date: "$date", _id: "$_id.companyId", name: "$_id.companyName" },
+      accountReports: { $push: "$accountReport" },
+    },
+  };
+  const calculateCompanyReport: PipelineStage = {
+    $project: {
+      _id: "$_id._id",
+      name: "$_id.name",
+      date: "$_id.date",
+      accountReports: "$accountReports",
+      aggregatedResult: {
+        $reduce: {
+          input: "$accountReports",
+          initialValue: { incomes: 0, expenses: 0, balance: 0 },
+          in: {
+            incomes: { $add: ["$$value.incomes", "$$this.incomes"] },
+            expenses: { $add: ["$$value.expenses", "$$this.expenses"] },
+            balance: { $add: ["$$value.balance", "$$this.balance"] },
+          },
+        },
+      },
+    },
+  };
+  const prettifyResult: PipelineStage = {
+    $project: {
+      _id: "$_id",
+      name: "$name",
+      date: "$date",
+      incomes: "$aggregatedResult.incomes",
+      expenses: "$aggregatedResult.expenses",
+      balance: "$aggregatedResult.balance",
+      accountReports: "$accountReports",
+    },
+  };
+
+  const result = await this.aggregate<ICompanyMonthlyReport>([
+    filterByCompany,
+    unwindCheckingAccounts,
+    // If we want to retrieve only the public accounts
+    // we remove the private ones
+    ...(onlyPublic ? [filterOnlyPublicAccounts] : []),
+    unwindMovements,
+    addMonthField,
+    groupByMonth,
+    getFirstMovement,
+    calculateBalance,
+    groupByAccount,
+    calculateCompanyReport,
+    prettifyResult,
+  ]);
 
   return result;
 };
